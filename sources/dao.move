@@ -45,6 +45,15 @@ module dao3_contract::dao {
             create_dao<SUI>(b"hello_world_dao", test_scenario::ctx(scenario));
         };
 
+        test_scenario::next_tx(scenario, admin);
+        {
+            let dao_val = test_scenario::take_shared<DAO<SUI>>(scenario);
+            
+            assert!(dao_val.name == string::utf8(b"hello_world_dao"), 0);
+            
+            test_scenario::return_shared(dao_val);
+        };
+
         test_scenario::end(scenario_val);
     }
 }
