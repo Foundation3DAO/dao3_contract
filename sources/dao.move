@@ -5,6 +5,8 @@ module dao3_contract::dao {
     use sui::tx_context::{TxContext};
     use std::string::{Self, String};
     use sui::table::{Self, Table};
+    use sui::test_scenario::Self;
+    use sui::sui::{Self, SUI};
 
     /// Proposal state
     const PENDING: u8 = 1;
@@ -31,5 +33,18 @@ module dao3_contract::dao {
             dao_admin_cap: DAOAdminCap {},
             balances: table::new(ctx)
         })
+    }
+
+    #[test]
+    public fun test_create_dao() {
+        let admin = @0xABBA; // needed only to initialize "state of the world"
+
+        let scenario_val = test_scenario::begin(admin);
+        let scenario = &mut scenario_val;
+        {
+            create_dao<SUI>(b"hello_world_dao", test_scenario::ctx(scenario));
+        };
+
+        test_scenario::end(scenario_val);
     }
 }
