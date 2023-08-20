@@ -5,8 +5,6 @@ module dao3_contract::dao {
     use sui::tx_context::{TxContext};
     use std::string;
     use sui::table::{Self, Table};
-    use sui::test_scenario::Self;
-    use sui::sui::{Self};
 
     /// Proposal state
     const PENDING: u8 = 1;
@@ -39,6 +37,9 @@ module dao3_contract::dao {
 
     #[test]
     public fun test_create_dao() {
+        use sui::test_scenario;
+        use sui::sui::{Self};
+
         let admin = @0xABBA;
 
         let scenario_val = test_scenario::begin(admin);
