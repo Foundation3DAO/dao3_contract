@@ -1,6 +1,6 @@
 module dao3_contract::dao {
     use sui::object::{Self, UID};
-    use sui::balance::{Self, Balance};
+    use sui::balance::Balance;
     use sui::transfer;
     use sui::tx_context::{TxContext};
     use std::string;
@@ -31,7 +31,6 @@ module dao3_contract::dao {
             dao_admin_cap: DAOAdminCap {},
             treasury: table::new(ctx)
         };
-        table::add(&mut new_dao.treasury, string::utf8(b"sui"),  balance::create_for_testing<T>(1000));
         transfer::share_object(new_dao);
     }
 
