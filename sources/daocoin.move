@@ -28,8 +28,13 @@ module dao3_contract::daocoin {
     burn_amount: u64
   }
 
+  struct FlashExecutableVoteTicket {
+    amount: u256,
+    to: address,
+  }
+
   // The owner of this object
-  struct DaoCoinAdminCap has key {
+  struct DaoCoinAdminCap has key, store {
     id: UID
   }
 
