@@ -8,7 +8,7 @@ module dao3_contract::dao {
     use sui::tx_context::{Self, TxContext};
     use sui::table::{Self, Table};
 
-    use dao3_contract::daocoin::DaoCoinAdminCap;
+    use dao3_contract::daocoin::{Self, DaoCoinAdminCap};
 
     /// Proposal state
     const PENDING: u8 = 1;
@@ -40,14 +40,14 @@ module dao3_contract::dao {
     }
 
     /// global DAO info of the specified token type `Token`.
-    struct SharedDaoProposalInfo<phantom Token: key + store> has key {
+    struct SharedDaoProposalInfo has key {
         id: UID,
         /// next proposal id.
         next_proposal_id: u64
     }
 
     /// Configuration of the `Token`'s DAO.
-    struct SharedDaoConfig<phantom TokenT: key + store> has key {
+    struct SharedDaoConfig has key {
         id: UID,
         /// after proposal created, how long use should wait before he can vote.
         voting_delay: u64,
@@ -63,7 +63,7 @@ module dao3_contract::dao {
 
 
     /// Proposal data struct.
-    struct Proposal<phantom Token: key + store, Action: store> has key {
+    struct Proposal<Action: store> has key {
         id: UID,
         /// creator of the proposal
         proposer: address,
@@ -86,7 +86,7 @@ module dao3_contract::dao {
     }
 
     /// User vote info.
-    struct Vote<phantom TokenT: key + store> has key {
+    struct Vote has key {
         id: UID,
         /// vote for the proposal under the `proposer`.
         proposer: address,
@@ -110,7 +110,7 @@ module dao3_contract::dao {
     // plugin function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
     /// can optin this module by call this `register function`.
-    public entry fun plugin<TokenT: key + store>(
+    public entry fun plugin(
         admin_cap: DaoCoinAdminCap,
         voting_delay: u64,
         voting_period: u64,
@@ -118,13 +118,13 @@ module dao3_contract::dao {
         min_action_delay: u64,
         ctx: &mut TxContext
     ) {
-        let gov_info = SharedDaoProposalInfo<TokenT> {
+        let gov_info = SharedDaoProposalInfo {
             id: object::new(ctx),
             next_proposal_id: 0,
         };
         transfer::share_object(gov_info);
 
-        let config = new_dao_config<TokenT>(
+        let config = new_dao_config(
             voting_delay,
             voting_period,
             voting_quorum_rate,
@@ -135,13 +135,13 @@ module dao3_contract::dao {
         transfer::public_transfer(admin_cap, tx_context::sender(ctx))
     }
 
-    public fun new_dao_config<TokenT: key + store>(
+    public fun new_dao_config(
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
         min_action_delay: u64,
         ctx: &mut TxContext
-    ): SharedDaoConfig<TokenT> {
+    ): SharedDaoConfig {
         assert!(voting_delay > 0, ERR_CONFIG_PARAM_INVALID);
         assert!(voting_period > 0, ERR_CONFIG_PARAM_INVALID);
         assert!(voting_quorum_rate > 0 && voting_quorum_rate <= 100, ERR_CONFIG_PARAM_INVALID);
@@ -172,6 +172,17 @@ module dao3_contract::dao {
             // assert!(!table::contains(&dao_val.treasury, string::utf8(b"suis")), 4);
             // assert!(balance::value(table::borrow(&dao_val.treasury, string::utf8(b"sui"))) == 1000 , 5);
             test_scenario::return_shared(dao_val);
+        };
+
+        test_scenario::next_tx(scenario, admin);
+        {
+            daocoin::init_for_testing(test_scenario::ctx(scenario));
+        };
+
+        test_scenario::next_tx(scenario, admin);
+        {
+            let adminCap = test_scenario::take_from_sender<DaoCoinAdminCap>(scenario);
+            plugin(adminCap, 60 * 1000, 60 * 60 * 1000, 4, 60 * 60 * 1000, test_scenario::ctx(scenario));
         };
 
         test_scenario::end(scenario_val);
