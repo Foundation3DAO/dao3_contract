@@ -2,7 +2,7 @@ module dao3_contract::dao {
     use std::string;
     use std::option;
 
-    use sui::object::{Self, UID};
+    use sui::object::{Self, ID, UID};
     use sui::balance::Balance;
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
@@ -41,8 +41,7 @@ module dao3_contract::dao {
     /// global DAO info of the specified token type `Token`.
     struct SharedDaoProposalInfo has key {
         id: UID,
-        /// next proposal id.
-        next_proposal_id: u64
+        proposals: Table<ID, u8>,
     }
 
     /// Configuration of the `Token`'s DAO.
@@ -116,7 +115,7 @@ module dao3_contract::dao {
 
         let gov_info = SharedDaoProposalInfo {
             id: object::new(ctx),
-            next_proposal_id: 0,
+            proposals: table::new(ctx)
         };
         transfer::share_object(gov_info);
 
@@ -165,8 +164,6 @@ module dao3_contract::dao {
             let adminCap = test_scenario::take_from_sender<DaoCoinAdminCap>(scenario);
             plugin(adminCap, b"hello_world_dao", 60 * 1000, 60 * 60 * 1000, 4, 60 * 60 * 1000, test_scenario::ctx(scenario));
         };
-
-        
 
         test_scenario::end(scenario_val);
     }
