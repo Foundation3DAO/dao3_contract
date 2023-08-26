@@ -32,10 +32,9 @@ module dao3_contract::dao {
 
     struct DAOAdminCap has store, drop {}
 
-    struct DAO<phantom T> has key, store {
+    struct DAO has key, store {
         id: UID,
         dao_admin_cap: DAOAdminCap,
-        treasury: Table<string::String, Balance<T>>,
         name: string::String,
     }
 
@@ -96,28 +95,25 @@ module dao3_contract::dao {
         accept: bool,
     }
 
-
-    public entry fun create_dao<T>(name: vector<u8>, ctx: &mut TxContext) {
-        let new_dao = DAO<T> {
-            id: object::new(ctx),
-            name: string::utf8(name),
-            dao_admin_cap: DAOAdminCap {},
-            treasury: table::new(ctx)
-        };
-        transfer::share_object(new_dao);
-    }
-
     // plugin function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
     /// can optin this module by call this `register function`.
-    public entry fun plugin(
+    public entry fun plugin (
         admin_cap: DaoCoinAdminCap,
+        name: vector<u8>,
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
         min_action_delay: u64,
         ctx: &mut TxContext
     ) {
+        let new_dao = DAO {
+            id: object::new(ctx),
+            name: string::utf8(name),
+            dao_admin_cap: DAOAdminCap {},
+        };
+        transfer::share_object(new_dao);
+
         let gov_info = SharedDaoProposalInfo {
             id: object::new(ctx),
             next_proposal_id: 0,
@@ -158,21 +154,6 @@ module dao3_contract::dao {
 
         let scenario_val = test_scenario::begin(admin);
         let scenario = &mut scenario_val;
-        {
-            create_dao<sui::SUI>(b"hello_world_dao", test_scenario::ctx(scenario));
-        };
-
-        test_scenario::next_tx(scenario, admin);
-        {
-            let dao_val = test_scenario::take_shared<DAO<sui::SUI>>(scenario);
-            
-            assert!(dao_val.name == string::utf8(b"hello_world_dao"), 1);
-            // assert!(table::length(&dao_val.treasury) == 1, 2);
-            // assert!(table::contains(&dao_val.treasury, string::utf8(b"sui")), 3);
-            // assert!(!table::contains(&dao_val.treasury, string::utf8(b"suis")), 4);
-            // assert!(balance::value(table::borrow(&dao_val.treasury, string::utf8(b"sui"))) == 1000 , 5);
-            test_scenario::return_shared(dao_val);
-        };
 
         test_scenario::next_tx(scenario, admin);
         {
@@ -182,8 +163,10 @@ module dao3_contract::dao {
         test_scenario::next_tx(scenario, admin);
         {
             let adminCap = test_scenario::take_from_sender<DaoCoinAdminCap>(scenario);
-            plugin(adminCap, 60 * 1000, 60 * 60 * 1000, 4, 60 * 60 * 1000, test_scenario::ctx(scenario));
+            plugin(adminCap, b"hello_world_dao", 60 * 1000, 60 * 60 * 1000, 4, 60 * 60 * 1000, test_scenario::ctx(scenario));
         };
+
+        
 
         test_scenario::end(scenario_val);
     }
