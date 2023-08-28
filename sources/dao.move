@@ -1,6 +1,7 @@
 module dao3_contract::dao {
-    use std::string;
+    use std::string::{Self, String};
     use std::option;
+    use std::type_name;
 
     use sui::object::{Self, ID, UID};
     use sui::balance::Balance;
@@ -8,7 +9,7 @@ module dao3_contract::dao {
     use sui::tx_context::{Self, TxContext};
     use sui::table::{Self, Table};
 
-    use dao3_contract::daocoin::{Self, DaoCoinAdminCap};
+    use dao3_contract::daocoin::{Self, DaoCoinAdminCap, DaoCoinStorage};
 
     /// Proposal state
     const PENDING: u8 = 1;
@@ -35,12 +36,13 @@ module dao3_contract::dao {
     struct DAO has key, store {
         id: UID,
         dao_admin_cap: DAOAdminCap,
-        name: string::String,
+        name: String,
     }
 
     /// global DAO info of the specified token type `Token`.
-    struct SharedDaoProposalInfo has key {
+    struct SharedDaoVotingMachine<phantom T> has key {
         id: UID,
+        type_name: String,
         proposals: Table<ID, u8>,
     }
 
@@ -99,6 +101,7 @@ module dao3_contract::dao {
     /// can optin this module by call this `register function`.
     public entry fun plugin (
         admin_cap: DaoCoinAdminCap,
+        dao_storage: &DaoCoinStorage,
         name: vector<u8>,
         voting_delay: u64,
         voting_period: u64,
@@ -113,11 +116,15 @@ module dao3_contract::dao {
         };
         transfer::share_object(new_dao);
 
-        let gov_info = SharedDaoProposalInfo {
+        let typeName = type_name::get<DaoCoinStorage>();
+        let typeNameStr = type_name::borrow_string(&typeName);
+
+        let shared_voting_machine = SharedDaoVotingMachine<DaoCoinStorage> {
             id: object::new(ctx),
+            type_name: string::from_ascii(*typeNameStr),
             proposals: table::new(ctx)
         };
-        transfer::share_object(gov_info);
+        transfer::share_object(shared_voting_machine);
 
         let config = new_dao_config(
             voting_delay,
@@ -162,7 +169,10 @@ module dao3_contract::dao {
         test_scenario::next_tx(scenario, admin);
         {
             let adminCap = test_scenario::take_from_sender<DaoCoinAdminCap>(scenario);
-            plugin(adminCap, b"hello_world_dao", 60 * 1000, 60 * 60 * 1000, 4, 60 * 60 * 1000, test_scenario::ctx(scenario));
+            let coinStorage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
+            let coinStorage = &coinStorage_val;
+            plugin(adminCap, coinStorage, b"hello_world_dao", 60 * 1000, 60 * 60 * 1000, 4, 60 * 60 * 1000, test_scenario::ctx(scenario));
+            test_scenario::return_shared(coinStorage_val);
         };
 
         test_scenario::end(scenario_val);
