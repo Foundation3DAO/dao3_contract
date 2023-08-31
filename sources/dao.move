@@ -66,7 +66,7 @@ module dao3_contract::dao {
     struct MintAction has store {}
 
     /// Proposal data struct.
-    struct Proposal<Action: store> has key {
+    struct Proposal has key {
         id: UID,
         /// creator of the proposal
         proposer: address,
@@ -85,7 +85,7 @@ module dao3_contract::dao {
         /// how many votes to reach to make the proposal pass.
         quorum_votes: u256,
         /// proposal action.
-        action: option::Option<Action>,
+        action: option::Option<string::String>,
     }
 
     /// User vote info.
@@ -167,7 +167,7 @@ module dao3_contract::dao {
         let b = coin::value(&propose_right);
         assert!(b > 0, 1);
         
-        let proposal = Proposal<MintAction> {
+        let proposal = Proposal {
             id: object::new(ctx),
             proposer: tx_context::sender(ctx),
             start_time: clock::timestamp_ms(clock) + config.voting_delay,
@@ -177,7 +177,7 @@ module dao3_contract::dao {
             eta: 0,
             action_delay: config.min_action_delay,
             quorum_votes: 0,
-            action: option::some(MintAction {}),
+            action: option::some(string::utf8(b"")),
         };
         let id = object::uid_to_inner(&proposal.id);
         table::add(&mut voting_machine.proposals, object::uid_to_inner(&proposal.id), PENDING);
