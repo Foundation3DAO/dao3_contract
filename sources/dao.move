@@ -3,11 +3,13 @@ module dao3_contract::dao {
     use std::option;
     use std::type_name;
 
+    use sui::coin::{Self, Coin};
     use sui::object::{Self, ID, UID};
-    use sui::balance::Balance;
+    use sui::balance::{Self, Balance};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
     use sui::table::{Self, Table};
+    use sui::clock::{Self, Clock};
 
     use dao3_contract::daocoin::{Self, DaoCoinAdminCap, DaoCoinStorage};
 
@@ -61,6 +63,7 @@ module dao3_contract::dao {
         min_action_delay: u64,
     }
 
+    struct MintAction has store {}
 
     /// Proposal data struct.
     struct Proposal<Action: store> has key {
@@ -149,6 +152,38 @@ module dao3_contract::dao {
         assert!(voting_quorum_rate > 0 && voting_quorum_rate <= 100, ERR_CONFIG_PARAM_INVALID);
         assert!(min_action_delay > 0, ERR_CONFIG_PARAM_INVALID);
         SharedDaoConfig { id: object::new(ctx), voting_delay, voting_period, voting_quorum_rate, min_action_delay }
+    }
+
+    public entry fun create_proposal<T>(
+        propose_right: Coin<T>,
+        config: &SharedDaoConfig,
+        voting_machine: &mut SharedDaoVotingMachine<T>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ): ID {
+        let typeName = type_name::get<T>();
+        let typeNameStr = type_name::borrow_string(&typeName);
+        assert!(string::from_ascii(*typeNameStr) == voting_machine.type_name, 1);
+        let b = coin::value(&propose_right);
+        assert!(b > 0, 1);
+        
+        let proposal = Proposal<MintAction> {
+            id: object::new(ctx),
+            proposer: tx_context::sender(ctx),
+            start_time: clock::timestamp_ms(clock) + config.voting_delay,
+            end_time: clock::timestamp_ms(clock) + config.voting_delay + config.voting_period,
+            for_votes: 0,
+            against_votes: 0,
+            eta: 0,
+            action_delay: config.min_action_delay,
+            quorum_votes: 0,
+            action: option::some(MintAction {}),
+        };
+        let id = object::uid_to_inner(&proposal.id);
+        table::add(&mut voting_machine.proposals, object::uid_to_inner(&proposal.id), PENDING);
+        transfer::share_object(proposal);
+        transfer::public_transfer(propose_right, tx_context::sender(ctx));
+        id
     }
 
     #[test]
