@@ -263,6 +263,23 @@ module dao3_contract::dao {
         };
 
         // test coin holder can vote for a proposal
+        test_scenario::next_tx(scenario, admin);
+        {
+            let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
+            let dao_coin_storage = &mut dao_coin_storage_val;
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let shared_dao_config = test_scenario::take_shared<SharedDaoConfig>(scenario);
+            let shared_dao_voting_machine = test_scenario::take_shared<SharedDaoVotingMachine>(scenario);
+            let c = clock::create_for_testing(test_scenario::ctx(scenario));
+            let proposal = test_scenario::take_shared<Proposal>(scenario);
+            vote_for_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine,&mut proposal,true, &c, test_scenario::ctx(scenario));
+            
+            test_scenario::return_shared(dao_coin_storage_val);
+            test_scenario::return_shared(shared_dao_config);
+            test_scenario::return_shared(shared_dao_voting_machine);
+            test_scenario::return_shared(proposal);
+            clock::destroy_for_testing(c);
+        };
 
         test_scenario::end(scenario_val);
     }
