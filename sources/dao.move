@@ -25,16 +25,20 @@ module dao3_contract::dao {
 
     const CREATE: u8 = 1;
 
-    const ERR_NOT_AUTHORIZED: u64 = 1401;
-    const ERR_ACTION_DELAY_TOO_SMALL: u64 = 1402;
-    const ERR_PROPOSAL_STATE_INVALID: u64 = 1403;
-    const ERR_PROPOSAL_ID_MISMATCH: u64 = 1404;
-    const ERR_PROPOSER_MISMATCH: u64 = 1405;
-    const ERR_QUORUM_RATE_INVALID: u64 = 1406;
-    const ERR_CONFIG_PARAM_INVALID: u64 = 1407;
-    const ERR_VOTE_STATE_MISMATCH: u64 = 1408;
-    const ERR_ACTION_MUST_EXIST: u64 = 1409;
-    const ERR_VOTED_OTHERS_ALREADY: u64 = 1410;
+    const WITHDRAW_ACTION: vector<u8> = b"withdraw";
+
+    const ERR_NOT_AUTHORIZED: u64 = 101;
+    const ERR_ACTION_DELAY_TOO_SMALL: u64 = 102;
+    const ERR_PROPOSAL_STATE_INVALID: u64 = 103;
+    const ERR_PROPOSAL_ID_MISMATCH: u64 = 104;
+    const ERR_PROPOSER_MISMATCH: u64 = 105;
+    const ERR_QUORUM_RATE_INVALID: u64 = 106;
+    const ERR_CONFIG_PARAM_INVALID: u64 = 107;
+    const ERR_VOTE_STATE_MISMATCH: u64 = 108;
+    const ERR_ACTION_MUST_EXIST: u64 = 109;
+    const ERR_VOTED_OTHERS_ALREADY: u64 = 110;
+    const ERR_ZERO_COIN: u64 = 111;
+    const ERR_NEGATIVE_AMOUNT: u64 = 112;
 
     struct DAOAdminCap has store, drop {}
 
@@ -92,6 +96,8 @@ module dao3_contract::dao {
         propsal_state: u8,
         // check if an address voted or not
         voters: Table<address, bool>,
+        // how much the proposal grants
+        amount: u64,
     }
 
     // User vote info.
@@ -165,10 +171,16 @@ module dao3_contract::dao {
         config: &SharedDaoConfig,
         voting_machine: &mut SharedDaoVotingMachine,
         clock: &Clock,
+        action: vector<u8>,
+        amount: u64,
         ctx: &mut TxContext
     ) {
         let b = coin::value(&propose_right);
-        assert!(b > 0, 1);
+        assert!(b > 0, ERR_ZERO_COIN);
+        assert!(amount >= 0, ERR_NEGATIVE_AMOUNT);
+        if (action == WITHDRAW_ACTION && amount == 0) {
+            assert!(false, ERR_ZERO_COIN);
+        };
         
         let proposal = Proposal {
             id: object::new(ctx),
@@ -180,9 +192,10 @@ module dao3_contract::dao {
             eta: 0,
             action_delay: config.min_action_delay,
             quorum_votes: 0,
-            action: option::some(string::utf8(b"")),
+            action: option::some(string::utf8(action)),
             propsal_state: PENDING,
             voters: table::new(ctx),
+            amount,
         };
         let id = object::uid_to_inner(&proposal.id);
         debug::print<ID>(&id);
@@ -254,7 +267,7 @@ module dao3_contract::dao {
             let shared_dao_config = test_scenario::take_shared<SharedDaoConfig>(scenario);
             let shared_dao_voting_machine = test_scenario::take_shared<SharedDaoVotingMachine>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
-            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &c, test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &c, b"test proposal", 100, test_scenario::ctx(scenario));
             
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(shared_dao_config);
