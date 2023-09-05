@@ -15,7 +15,7 @@ module dao3_contract::daocoin {
   const ERROR_NO_ZERO_ADDRESS: u64 = 2;
   const ERROR_WRONG_FLASH_MINT_BURN_AMOUNT: u64 = 3;
 
-  // OTW to create the Sui Stable DaoCoin currency
+  // OTW to create the DaoCoin currency
   struct DAOCOIN has drop {}
 
   // Shared object
@@ -82,7 +82,7 @@ module dao3_contract::daocoin {
   * @param publisher The Publisher object of the package who wishes to mint DaoCoin
   * @return Coin<DAOCOIN> New created DAOCOIN coin
   */
-  public fun mint(storage: &mut DaoCoinStorage, _publisher: &Publisher, value: u64, ctx: &mut TxContext): Coin<DAOCOIN> {
+  public fun mint(storage: &mut DaoCoinStorage, value: u64, ctx: &mut TxContext): Coin<DAOCOIN> {
     // assert!(is_minter(storage, object::id(publisher)), ERROR_NOT_ALLOWED_TO_MINT);
 
     coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx)
@@ -138,7 +138,7 @@ module dao3_contract::daocoin {
   * It emits the NewAdmin event with the new admin address
   *
   */
-  entry public fun transfer_admin(admin_cap: DaoCoinAdminCap, recipient: address) {
+  public entry fun transfer_admin(admin_cap: DaoCoinAdminCap, recipient: address) {
     assert!(recipient != @0x0, ERROR_NO_ZERO_ADDRESS);
     transfer::transfer(admin_cap, recipient);
 
