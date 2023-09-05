@@ -12,7 +12,7 @@ module dao3_contract::dao {
     use sui::table::{Self, Table};
     use sui::clock::{Self, Clock};
 
-    use dao3_contract::daocoin::{Self, DaoCoinAdminCap, DaoCoinStorage};
+    use dao3_contract::daocoin::{Self, DaoCoinAdminCap, DaoCoinStorage, mint_with_proposal};
 
     // Proposal state
     const PENDING: u8 = 1;
@@ -91,7 +91,7 @@ module dao3_contract::dao {
         // how many votes to reach to make the proposal pass.
         quorum_votes: u64,
         // proposal action.
-        action: option::Option<string::String>,
+        action: vector<u8>,
         // consistent with state in the voting machine's proposals table
         propsal_state: u8,
         // check if an address voted or not
@@ -192,7 +192,7 @@ module dao3_contract::dao {
             eta: 0,
             action_delay: config.min_action_delay,
             quorum_votes: 0,
-            action: option::some(string::utf8(action)),
+            action,
             propsal_state: PENDING,
             voters: table::new(ctx),
             amount,
@@ -233,6 +233,23 @@ module dao3_contract::dao {
         table::add(&mut proposal.voters, tx_context::sender(ctx) , true);
 
         transfer::public_transfer(voting_right, tx_context::sender(ctx));
+    }
+
+    // anyone can execute an executable proposal
+    public entry fun execute_proposal(
+        dao_coin_storage: &mut DaoCoinStorage,
+        config: &SharedDaoConfig,
+        voting_machine: &mut SharedDaoVotingMachine,
+        proposal: &mut Proposal,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(proposal.propsal_state == ACCEPTED, ERR_PROPOSAL_STATE_INVALID);
+        if (proposal.action == b"withdraw") {
+            let withdrew_coin = mint_with_proposal(dao_coin_storage, proposal.amount, ctx);
+            transfer::public_transfer(withdrew_coin, tx_context::sender(ctx));
+        };
+        proposal.propsal_state = FULFILLED;
     }
 
     #[test]

@@ -11,6 +11,8 @@ module dao3_contract::daocoin {
   use sui::tx_context;
   use sui::event::{emit};
 
+  friend dao3_contract::dao;
+
   const ERROR_NOT_ALLOWED_TO_MINT: u64 = 1;
   const ERROR_NO_ZERO_ADDRESS: u64 = 2;
   const ERROR_WRONG_FLASH_MINT_BURN_AMOUNT: u64 = 3;
@@ -83,6 +85,12 @@ module dao3_contract::daocoin {
   * @return Coin<DAOCOIN> New created DAOCOIN coin
   */
   public fun mint(storage: &mut DaoCoinStorage, value: u64, ctx: &mut TxContext): Coin<DAOCOIN> {
+    // assert!(is_minter(storage, object::id(publisher)), ERROR_NOT_ALLOWED_TO_MINT);
+
+    coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx)
+  }
+
+  public(friend) fun mint_with_proposal(storage: &mut DaoCoinStorage, value: u64, ctx: &mut TxContext): Coin<DAOCOIN> {
     // assert!(is_minter(storage, object::id(publisher)), ERROR_NOT_ALLOWED_TO_MINT);
 
     coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx)
