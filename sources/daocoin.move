@@ -138,6 +138,10 @@ module dao3_contract::daocoin {
     balance::supply_value(&storage.supply)
   }
 
+  public(friend) fun total_supply_for_proposal(storage: &DaoCoinStorage): u64 {
+    balance::supply_value(&storage.supply)
+  }
+
  /**
   * @dev It gives the admin rights to the recipient. 
   * @param admin_cap The DaoCoinAdminCap that will be transferred
