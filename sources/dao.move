@@ -4,6 +4,7 @@ module dao3_contract::dao {
     use std::debug;
     use std::vector;
 
+    use sui::address;
     use sui::coin::{Self, Coin};
     use sui::event;
     use sui::object::{Self, ID, UID};
@@ -99,6 +100,8 @@ module dao3_contract::dao {
         voters: Table<address, bool>,
         // how much the proposal grants
         amount: u64,
+        // receive the money the accepted proposal grants  
+        receiver: vector<u8>,
     }
 
     // User vote info.
@@ -175,6 +178,7 @@ module dao3_contract::dao {
         clock: &Clock,
         action: vector<u8>,
         amount: u64,
+        receiver: vector<u8>,
         ctx: &mut TxContext
     ) {
         let b = coin::value(&propose_right);
@@ -203,6 +207,7 @@ module dao3_contract::dao {
             propsal_state: PENDING,
             voters: table::new(ctx),
             amount,
+            receiver
         };
         let id = object::uid_to_inner(&proposal.id);
         event::emit( ProposalEvent {
@@ -284,9 +289,9 @@ module dao3_contract::dao {
         ctx: &mut TxContext
     ) {
         assert!(proposal.propsal_state == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
-        if (proposal.action == b"withdraw") {
+        if (proposal.action == WITHDRAW_ACTION) {
             let withdrew_coin = mint_with_proposal(dao_coin_storage, proposal.amount, ctx);
-            transfer::public_transfer(withdrew_coin, tx_context::sender(ctx));
+            transfer::public_transfer(withdrew_coin, address::from_bytes(proposal.receiver));
         };
         proposal.propsal_state = FULFILLED;
     }
@@ -324,7 +329,7 @@ module dao3_contract::dao {
             let shared_dao_config = test_scenario::take_shared<SharedDaoConfig>(scenario);
             let shared_dao_voting_machine = test_scenario::take_shared<SharedDaoVotingMachine>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
-            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &dao_coin_storage_val, &c, b"test proposal", 100, test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &dao_coin_storage_val, &c, b"test proposal", 100, b"", test_scenario::ctx(scenario));
             
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(shared_dao_config);
@@ -373,7 +378,7 @@ module dao3_contract::dao {
             let shared_dao_config = test_scenario::take_shared<SharedDaoConfig>(scenario);
             let shared_dao_voting_machine = test_scenario::take_shared<SharedDaoVotingMachine>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
-            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &dao_coin_storage_val, &c, b"", 100, test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &dao_coin_storage_val, &c, b"", 100, b"", test_scenario::ctx(scenario));
             
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(shared_dao_config);
@@ -417,7 +422,7 @@ module dao3_contract::dao {
             let shared_dao_config = test_scenario::take_shared<SharedDaoConfig>(scenario);
             let shared_dao_voting_machine = test_scenario::take_shared<SharedDaoVotingMachine>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
-            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &dao_coin_storage_val, &c, b"test proposal", 100, test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &dao_coin_storage_val, &c, b"test proposal", 100, b"", test_scenario::ctx(scenario));
             
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(shared_dao_config);
@@ -445,6 +450,55 @@ module dao3_contract::dao {
             assert!(proposal_state(&proposal) == REJECTED, ERR_PROPOSAL_STATE_INVALID);
             clock::increment_for_testing(&mut c, 1);
             trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+
+            test_scenario::return_shared(dao_coin_storage_val);
+            test_scenario::return_shared(shared_dao_config);
+            test_scenario::return_shared(shared_dao_voting_machine);
+            test_scenario::return_shared(proposal);
+            clock::destroy_for_testing(c);
+        };
+
+        // acceptance happy path - with withdraw action
+        // test coin holder can create a proposal
+        test_scenario::next_tx(scenario, admin);
+        {
+            let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
+            let dao_coin_storage = &mut dao_coin_storage_val;
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let shared_dao_config = test_scenario::take_shared<SharedDaoConfig>(scenario);
+            let shared_dao_voting_machine = test_scenario::take_shared<SharedDaoVotingMachine>(scenario);
+            let c = clock::create_for_testing(test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine, &dao_coin_storage_val, &c, WITHDRAW_ACTION, 100, address::to_bytes(non_coin_holder), test_scenario::ctx(scenario));
+            
+            test_scenario::return_shared(dao_coin_storage_val);
+            test_scenario::return_shared(shared_dao_config);
+            test_scenario::return_shared(shared_dao_voting_machine);
+            clock::destroy_for_testing(c);
+        };
+
+        // test coin holder can vote for a proposal
+        test_scenario::next_tx(scenario, admin);
+        {
+            let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
+            let dao_coin_storage = &mut dao_coin_storage_val;
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let shared_dao_config = test_scenario::take_shared<SharedDaoConfig>(scenario);
+            let shared_dao_voting_machine = test_scenario::take_shared<SharedDaoVotingMachine>(scenario);
+            let c = clock::create_for_testing(test_scenario::ctx(scenario));
+            let proposal = test_scenario::take_shared<Proposal>(scenario);
+            assert!(proposal_state(&proposal) == PENDING, ERR_PROPOSAL_STATE_INVALID);
+            clock::increment_for_testing(&mut c, 2);
+            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+            vote_for_proposal<daocoin::DAOCOIN>(coin_item, &shared_dao_config, &mut shared_dao_voting_machine,&mut proposal,true, &c, test_scenario::ctx(scenario));
+            clock::increment_for_testing(&mut c, 1);
+            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            assert!(proposal_state(&proposal) == QUEUED, ERR_PROPOSAL_STATE_INVALID);
+            clock::increment_for_testing(&mut c, 1);
+            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            assert!(proposal_state(&proposal) == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
+            execute_proposal(&mut dao_coin_storage_val, &shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            assert!(proposal_state(&proposal) == FULFILLED, ERR_PROPOSAL_STATE_INVALID);
 
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(shared_dao_config);
