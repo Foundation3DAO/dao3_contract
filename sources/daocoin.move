@@ -7,7 +7,6 @@ module dao3_contract::daocoin {
   use sui::transfer;
   use sui::coin::{Self, Coin};
   use sui::url;
-  use sui::package::{Publisher};
   use sui::tx_context;
   use sui::event::{emit};
 
@@ -24,15 +23,6 @@ module dao3_contract::daocoin {
   struct DaoCoinStorage has key {
     id: UID,
     supply: Supply<DAOCOIN>,
-  }
-
-  struct FlashMint {
-    burn_amount: u64
-  }
-
-  struct FlashExecutableVoteTicket {
-    amount: u256,
-    to: address,
   }
 
   // The owner of this object
@@ -94,21 +84,6 @@ module dao3_contract::daocoin {
     // assert!(is_minter(storage, object::id(publisher)), ERROR_NOT_ALLOWED_TO_MINT);
 
     coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx)
-  }
-
-  public fun flash_mint(storage: &mut DaoCoinStorage, value: u64, ctx: &mut TxContext): (FlashMint, Coin<DAOCOIN>) {
-    (FlashMint { burn_amount: value }, coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx))
-  }
-
-  public fun read_flash_mint(potato: &FlashMint): u64 {
-    potato.burn_amount
-  }
-
-  public fun flash_burn(storage: &mut DaoCoinStorage, potato: FlashMint, asset: Coin<DAOCOIN>) {
-    let FlashMint { burn_amount } = potato;
-    
-    assert!(coin::value(&asset) >= burn_amount, ERROR_WRONG_FLASH_MINT_BURN_AMOUNT);
-    balance::decrease_supply(&mut storage.supply, coin::into_balance(asset));
   }
 
   /**

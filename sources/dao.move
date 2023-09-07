@@ -1,14 +1,11 @@
 module dao3_contract::dao {
     use std::string::{Self, String};
-    use std::option;
-    use std::debug;
     use std::vector;
 
     use sui::address;
     use sui::coin::{Self, Coin};
     use sui::event;
     use sui::object::{Self, ID, UID};
-    use sui::balance::{Self, Balance};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
     use sui::table::{Self, Table};
@@ -50,7 +47,7 @@ module dao3_contract::dao {
         name: String,
     }
 
-    // global DAO info of the specified token type `Token`.
+    // users can get proposals' state from this table.
     struct SharedDaoVotingMachine has key {
         id: UID,
         proposals: Table<ID, u8>,
@@ -102,17 +99,6 @@ module dao3_contract::dao {
         amount: u64,
         // receive the money the accepted proposal grants  
         receiver: vector<u8>,
-    }
-
-    // User vote info.
-    struct Vote has key {
-        id: UID,
-        // vote for the proposal under the `proposer`.
-        proposer: address,
-        // how many tokens voted.
-        votes: u256,
-        // vote for or vote against.
-        accept: bool,
     }
 
     struct ProposalEvent has copy, drop {
