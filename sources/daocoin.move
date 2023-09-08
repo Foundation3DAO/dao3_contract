@@ -8,7 +8,6 @@ module dao3_contract::daocoin {
   use sui::coin::{Self, Coin};
   use sui::url;
   use sui::tx_context;
-  use sui::event::{emit};
 
   friend dao3_contract::dao;
 
@@ -28,10 +27,6 @@ module dao3_contract::daocoin {
   // The owner of this object
   struct DaoCoinAdminCap has key, store {
     id: UID
-  }
-
-  struct NewAdmin has copy, drop {
-    admin: address
   }
 
   fun init(witness: DAOCOIN, ctx: &mut TxContext) {
@@ -68,21 +63,7 @@ module dao3_contract::daocoin {
       transfer::public_freeze_object(metadata);
   }
 
-  /**
-  * @dev Only packages can mint dinero by passing the storage publisher
-  * @param storage The DaoCoinStorage
-  * @param publisher The Publisher object of the package who wishes to mint DaoCoin
-  * @return Coin<DAOCOIN> New created DAOCOIN coin
-  */
-  public fun mint(storage: &mut DaoCoinStorage, value: u64, ctx: &mut TxContext): Coin<DAOCOIN> {
-    // assert!(is_minter(storage, object::id(publisher)), ERROR_NOT_ALLOWED_TO_MINT);
-
-    coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx)
-  }
-
   public(friend) fun mint_with_proposal(storage: &mut DaoCoinStorage, value: u64, ctx: &mut TxContext): Coin<DAOCOIN> {
-    // assert!(is_minter(storage, object::id(publisher)), ERROR_NOT_ALLOWED_TO_MINT);
-
     coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx)
   }
 
@@ -116,23 +97,6 @@ module dao3_contract::daocoin {
   public(friend) fun total_supply_for_proposal(storage: &DaoCoinStorage): u64 {
     balance::supply_value(&storage.supply)
   }
-
- /**
-  * @dev It gives the admin rights to the recipient. 
-  * @param admin_cap The DaoCoinAdminCap that will be transferred
-  * @recipient the new admin address
-  *
-  * It emits the NewAdmin event with the new admin address
-  *
-  */
-  public entry fun transfer_admin(admin_cap: DaoCoinAdminCap, recipient: address) {
-    assert!(recipient != @0x0, ERROR_NO_ZERO_ADDRESS);
-    transfer::transfer(admin_cap, recipient);
-
-    emit(NewAdmin {
-      admin: recipient
-    });
-  } 
 
   // Test only functions
   #[test_only]
