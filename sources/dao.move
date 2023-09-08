@@ -13,6 +13,8 @@ module dao3_contract::dao {
 
     use dao3_contract::daocoin::{Self, DaoCoinAdminCap, DaoCoinStorage, mint_with_proposal};
 
+    const BLACK_HOLE: address = @0x0;
+
     // Proposal state
     const PENDING: u8 = 1;
     const ACTIVE: u8 = 2;
@@ -118,6 +120,7 @@ module dao3_contract::dao {
         min_action_delay: u64,
         ctx: &mut TxContext
     ) {
+        assert!(vector::length(&name) > 0, ERR_CONFIG_PARAM_INVALID);
         let new_dao = DAO {
             id: object::new(ctx),
             name: string::utf8(name),
@@ -139,10 +142,10 @@ module dao3_contract::dao {
             ctx
         );
         transfer::share_object(config);
-        transfer::public_transfer(admin_cap, tx_context::sender(ctx))
+        transfer::public_transfer(admin_cap, BLACK_HOLE)
     }
 
-    public fun new_dao_config(
+    fun new_dao_config(
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
@@ -226,7 +229,9 @@ module dao3_contract::dao {
             proposal.against_votes = proposal.against_votes + coin::value<DAOCOIN>(&voting_right);
         };
         
-        table::add(&mut proposal.voters, tx_context::sender(ctx) , true);
+        if (!table::contains(&proposal.voters, tx_context::sender(ctx))) {
+            table::add(&mut proposal.voters, tx_context::sender(ctx) , true);
+        };
 
         transfer::public_transfer(voting_right, tx_context::sender(ctx));
     }
