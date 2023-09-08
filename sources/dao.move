@@ -40,6 +40,7 @@ module dao3_contract::dao {
     const ERR_VOTED_OTHERS_ALREADY: u64 = 110;
     const ERR_ZERO_COIN: u64 = 111;
     const ERR_NEGATIVE_AMOUNT: u64 = 112;
+    const ERR_NO_RECEIVER: u64 = 113;
 
     struct DAOAdminCap has store, drop {}
 
@@ -108,9 +109,7 @@ module dao3_contract::dao {
         id: ID,
     }
 
-    // register function, can only be called by token issuer.
-    // Any token who wants to has gov functionality
-    // can optin this module by call this `register function`.
+    // register function, can only be called once by the token issuer.
     public entry fun register (
         admin_cap: DaoCoinAdminCap,
         name: vector<u8>,
@@ -175,6 +174,9 @@ module dao3_contract::dao {
         assert!(amount >= 0, ERR_NEGATIVE_AMOUNT);
         if (action == WITHDRAW_ACTION && amount == 0) {
             assert!(false, ERR_ZERO_COIN);
+        };
+        if (action == WITHDRAW_ACTION && vector::length(&receiver) == 0) {
+            assert!(false, ERR_NO_RECEIVER);
         };
         
         let rate = (config.voting_quorum_rate as u64);
@@ -276,7 +278,6 @@ module dao3_contract::dao {
         config: &SharedDaoConfig,
         voting_machine: &mut SharedDaoVotingMachine,
         proposal: &mut Proposal,
-        clock: &Clock,
         ctx: &mut TxContext
     ) {
         assert!(proposal.propsal_state == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
@@ -290,10 +291,8 @@ module dao3_contract::dao {
     #[test]
     public fun test_create_dao() {
         use sui::test_scenario;
-        use sui::sui::{Self};
 
         let admin = @0xABBA;
-        let coin_holder = @0x1234;
         let non_coin_holder = @0x5678;
 
         let scenario_val = test_scenario::begin(admin);
@@ -349,7 +348,7 @@ module dao3_contract::dao {
             clock::increment_for_testing(&mut c, 1);
             trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
             assert!(proposal_state(&proposal) == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
-            execute_proposal(&mut dao_coin_storage_val, &shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            execute_proposal(&mut dao_coin_storage_val, &shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, test_scenario::ctx(scenario));
             assert!(proposal_state(&proposal) == FULFILLED, ERR_PROPOSAL_STATE_INVALID);
 
             test_scenario::return_shared(dao_coin_storage_val);
@@ -488,7 +487,7 @@ module dao3_contract::dao {
             clock::increment_for_testing(&mut c, 1);
             trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
             assert!(proposal_state(&proposal) == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
-            execute_proposal(&mut dao_coin_storage_val, &shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            execute_proposal(&mut dao_coin_storage_val, &shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, test_scenario::ctx(scenario));
             assert!(proposal_state(&proposal) == FULFILLED, ERR_PROPOSAL_STATE_INVALID);
 
             test_scenario::return_shared(dao_coin_storage_val);
