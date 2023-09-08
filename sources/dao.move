@@ -240,12 +240,12 @@ module dao3_contract::dao {
     }
 
     public entry fun trigger_proposal_state_change (
-        config: &SharedDaoConfig,
         voting_machine: &mut SharedDaoVotingMachine,
         proposal: &mut Proposal,
         clock: &Clock,
-        ctx: &mut TxContext
     ) {
+        assert!(table::contains(&voting_machine.proposals, object::uid_to_inner(&proposal.id)), ERR_PROPOSAL_ID_MISMATCH);
+        
         let current_time = clock::timestamp_ms(clock);
         let new_state;
         if (current_time < proposal.start_time) {
@@ -265,12 +265,8 @@ module dao3_contract::dao {
             new_state = FULFILLED;
         };
         proposal.propsal_state = new_state;
-        if (table::contains(&voting_machine.proposals, object::uid_to_inner(&proposal.id))) {
-            table::remove(&mut voting_machine.proposals, object::uid_to_inner(&proposal.id));
-            table::add(&mut voting_machine.proposals, object::uid_to_inner(&proposal.id), new_state);
-        } else {
-            table::add(&mut voting_machine.proposals, object::uid_to_inner(&proposal.id), new_state);
-        };
+        table::remove(&mut voting_machine.proposals, object::uid_to_inner(&proposal.id));
+        table::add(&mut voting_machine.proposals, object::uid_to_inner(&proposal.id), new_state);
     }
 
     // anyone can execute an executable proposal
@@ -347,14 +343,14 @@ module dao3_contract::dao {
             let proposal = test_scenario::take_shared<Proposal>(scenario);
             assert!(proposal_state(&proposal) == PENDING, ERR_PROPOSAL_STATE_INVALID);
             clock::increment_for_testing(&mut c, 2);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
             vote_for_proposal<daocoin::DAOCOIN>(coin_item,&mut proposal,true, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == QUEUED, ERR_PROPOSAL_STATE_INVALID);
             clock::increment_for_testing(&mut c, 1);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
             execute_proposal(&mut dao_coin_storage_val, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
             assert!(proposal_state(&proposal) == FULFILLED, ERR_PROPOSAL_STATE_INVALID);
@@ -396,11 +392,11 @@ module dao3_contract::dao {
             let proposal = test_scenario::take_shared<Proposal>(scenario);
             assert!(proposal_state(&proposal) == PENDING, ERR_PROPOSAL_STATE_INVALID);
             clock::increment_for_testing(&mut c, 2);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
             vote_for_proposal<daocoin::DAOCOIN>(coin_item, &mut proposal,true, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACCEPTED, ERR_PROPOSAL_STATE_INVALID);
 
             test_scenario::return_shared(dao_coin_storage_val);
@@ -440,14 +436,14 @@ module dao3_contract::dao {
             let proposal = test_scenario::take_shared<Proposal>(scenario);
             assert!(proposal_state(&proposal) == PENDING, ERR_PROPOSAL_STATE_INVALID);
             clock::increment_for_testing(&mut c, 2);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
             vote_for_proposal<daocoin::DAOCOIN>(coin_item, &mut proposal,false, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == REJECTED, ERR_PROPOSAL_STATE_INVALID);
             clock::increment_for_testing(&mut c, 1);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
 
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(shared_dao_config);
@@ -486,14 +482,14 @@ module dao3_contract::dao {
             let proposal = test_scenario::take_shared<Proposal>(scenario);
             assert!(proposal_state(&proposal) == PENDING, ERR_PROPOSAL_STATE_INVALID);
             clock::increment_for_testing(&mut c, 2);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
             vote_for_proposal<daocoin::DAOCOIN>(coin_item, &mut proposal,true, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == QUEUED, ERR_PROPOSAL_STATE_INVALID);
             clock::increment_for_testing(&mut c, 1);
-            trigger_proposal_state_change(&shared_dao_config, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
+            trigger_proposal_state_change(&mut shared_dao_voting_machine, &mut proposal, &c);
             assert!(proposal_state(&proposal) == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
             execute_proposal(&mut dao_coin_storage_val, &mut shared_dao_voting_machine, &mut proposal, &c, test_scenario::ctx(scenario));
             assert!(proposal_state(&proposal) == FULFILLED, ERR_PROPOSAL_STATE_INVALID);
