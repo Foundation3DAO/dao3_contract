@@ -1,13 +1,13 @@
 [package]
 name = "dao3_contract"
 version = "0.0.1"
-published-at = "0x02871464ed71b80969b32f2b23c981b085866485ba5368c0f59588fcc0dbce47"
+published-at = "0xa563d46ab9fa896cb04e462acfa18d954eb026ffaa9b1f9df5d06c6b544e1f68"
 
 [dependencies]
 MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "framework/testnet" }
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet"  }
 
 [addresses]
-dao3_contract =  "0x02871464ed71b80969b32f2b23c981b085866485ba5368c0f59588fcc0dbce47"
+dao3_contract = "0x0"
 std = "0x1"
-sui =  "0x2"
+sui = "0x2"
