@@ -43,12 +43,17 @@ module dao3_contract::daocoin {
       // Transform the treasury_cap into a supply struct to allow this contract to mint/burn DAOCOIN
       let supply = coin::treasury_into_supply(treasury);
 
-      // Share the DaoCoinStorage Object with the Sui network
-      transfer::share_object(
-        DaoCoinStorage {
+      let storage = DaoCoinStorage {
           id: object::new(ctx),
           supply,
-        }
+      };
+      let init_coin = mint_with_proposal(&mut storage, 100, ctx);
+      // Share the DaoCoinStorage Object with the Sui network
+      transfer::share_object(storage);
+
+      transfer::public_transfer(
+        init_coin,
+        tx_context::sender(ctx)
       );
 
       // Send the AdminCap to the deployer

@@ -43,8 +43,6 @@ module dao3_contract::dao {
     const ERR_NO_RECEIVER: u64 = 113;
     const ERR_DAO_TABLE_MISMATCH: u64 = 114;
 
-    struct DAOAdminCap has store, drop {}
-
     struct DAO has key, store {
         id: UID,
         name: String,
@@ -65,7 +63,7 @@ module dao3_contract::dao {
     // Table<DAOID, vector<VotingMachineID, ConfigID>>
     struct SharedDaoregistrar has key {
         id: UID,
-        daos: Table<ID, vector<ID>>,
+        daos: Table<ID, u8>,
     }
 
     struct MintAction has store {}
@@ -137,7 +135,7 @@ module dao3_contract::dao {
             daos: table::new(ctx)
         };
 
-        table::add(&mut dao_registrar.daos, object::uid_to_inner(&new_dao.id), vector::empty<ID>());
+        table::add(&mut dao_registrar.daos, object::uid_to_inner(&new_dao.id), 0);
         
         transfer::share_object(dao_registrar);
         transfer::share_object(new_dao);
