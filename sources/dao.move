@@ -88,7 +88,7 @@ module dao3_contract::dao {
         // consistent with state in the voting machine's proposals table
         propsal_state: u8,
         // check if an address voted or not
-        voters: Table<address, bool>,
+        voters: Table<address, u64>,
         // how much the proposal grants
         amount: u64,
         // receive the money the accepted proposal grants  
@@ -209,7 +209,7 @@ module dao3_contract::dao {
         };
         
         if (!table::contains(&proposal.voters, tx_context::sender(ctx))) {
-            table::add(&mut proposal.voters, tx_context::sender(ctx) , true);
+            table::add(&mut proposal.voters, tx_context::sender(ctx), 0);
         };
 
         transfer::public_transfer(voting_right, tx_context::sender(ctx));
