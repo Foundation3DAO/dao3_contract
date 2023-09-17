@@ -85,7 +85,7 @@ module dao3_contract::dao {
         // how many votes to reach to make the proposal pass.
         quorum_votes: u64,
         // proposal action.
-        action: vector<u8>,
+        action: String,
         // consistent with state in the voting machine's proposals table
         propsal_state: u8,
         // check if an address voted or not
@@ -93,7 +93,7 @@ module dao3_contract::dao {
         // how much the proposal grants
         amount: u64,
         // receive the money the accepted proposal grants  
-        receiver: vector<u8>,
+        receiver: String,
     }
 
     struct ProposalEvent has copy, drop {
@@ -174,11 +174,11 @@ module dao3_contract::dao {
             eta,
             action_delay: dao.min_action_delay,
             quorum_votes: daocoin::total_supply_for_proposal(dao_coin_storage) * rate / 100,
-            action,
+            action: string::utf8(action),
             propsal_state: PENDING,
             voters: table::new(ctx),
             amount,
-            receiver
+            receiver: string::utf8(receiver),
         };
         let id = object::uid_to_inner(&proposal.id);
         event::emit( ProposalEvent {
@@ -239,7 +239,7 @@ module dao3_contract::dao {
             new_state = ACCEPTED;
         } else if (current_time < proposal.eta) {
             new_state = QUEUED;
-        } else if (vector::length<u8>(&proposal.action) > 0) {
+        } else if (string::length(&proposal.action) > 0) {
             new_state = EXECUTABLE;
         } else {
             new_state = FULFILLED;
@@ -259,9 +259,9 @@ module dao3_contract::dao {
     ) {
         assert!(proposal.eta <= clock::timestamp_ms(clock), ERR_PROPOSAL_STATE_INVALID);
         assert!(proposal.propsal_state == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
-        if (proposal.action == WITHDRAW_ACTION) {
+        if (proposal.action == string::utf8(WITHDRAW_ACTION)) {
             let withdrew_coin = mint_with_proposal(dao_coin_storage, proposal.amount, ctx);
-            transfer::public_transfer(withdrew_coin, address::from_bytes(proposal.receiver));
+            transfer::public_transfer(withdrew_coin, address::from_bytes(*string::bytes(&proposal.receiver)));
         };
         proposal.propsal_state = FULFILLED;
         if (!table::contains(&mut dao.proposals, object::uid_to_inner(&proposal.id))) {
