@@ -93,7 +93,7 @@ module dao3_contract::dao {
         // how much the proposal grants
         amount: u64,
         // receive the money the accepted proposal grants  
-        receiver: String,
+        receiver: vector<u8>,
     }
 
     struct ProposalEvent has copy, drop {
@@ -178,7 +178,7 @@ module dao3_contract::dao {
             propsal_state: PENDING,
             voters: table::new(ctx),
             amount,
-            receiver: string::utf8(receiver),
+            receiver,
         };
         let id = object::uid_to_inner(&proposal.id);
         event::emit( ProposalEvent {
@@ -261,7 +261,7 @@ module dao3_contract::dao {
         assert!(proposal.propsal_state == EXECUTABLE, ERR_PROPOSAL_STATE_INVALID);
         if (proposal.action == string::utf8(WITHDRAW_ACTION)) {
             let withdrew_coin = mint_with_proposal(dao_coin_storage, proposal.amount, ctx);
-            transfer::public_transfer(withdrew_coin, address::from_bytes(*string::bytes(&proposal.receiver)));
+            transfer::public_transfer(withdrew_coin, address::from_bytes(proposal.receiver));
         };
         proposal.propsal_state = FULFILLED;
         if (!table::contains(&mut dao.proposals, object::uid_to_inner(&proposal.id))) {
