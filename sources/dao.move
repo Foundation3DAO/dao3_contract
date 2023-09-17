@@ -305,7 +305,7 @@ module dao3_contract::dao {
         {
             let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
             let dao_coin_storage = &mut dao_coin_storage_val;
-            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 1000000000, test_scenario::ctx(scenario));
             let dao= test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
             let proposal = test_scenario::take_shared<Proposal>(scenario);
@@ -350,7 +350,7 @@ module dao3_contract::dao {
         {
             let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
             let dao_coin_storage = &mut dao_coin_storage_val;
-            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 1000000000, test_scenario::ctx(scenario));
             let dao = test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
             let proposal = test_scenario::take_shared<Proposal>(scenario);
@@ -375,7 +375,7 @@ module dao3_contract::dao {
         {
             let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
             let dao_coin_storage = &mut dao_coin_storage_val;
-            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 1000000000, test_scenario::ctx(scenario));
             let dao = test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
             create_proposal<daocoin::DAOCOIN>(b"proposal name",coin_item, &mut dao, &dao_coin_storage_val, &c, b"test proposal", 100, b"", test_scenario::ctx(scenario));
@@ -390,7 +390,7 @@ module dao3_contract::dao {
         {
             let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
             let dao_coin_storage = &mut dao_coin_storage_val;
-            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 1000000000, test_scenario::ctx(scenario));
             let dao = test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
             let proposal = test_scenario::take_shared<Proposal>(scenario);
@@ -417,7 +417,7 @@ module dao3_contract::dao {
         {
             let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
             let dao_coin_storage = &mut dao_coin_storage_val;
-            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 1000000000, test_scenario::ctx(scenario));
             let dao = test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
             create_proposal<daocoin::DAOCOIN>(b"proposal name",coin_item, &mut dao, &dao_coin_storage_val, &c, WITHDRAW_ACTION, 100, address::to_bytes(non_coin_holder), test_scenario::ctx(scenario));
@@ -432,7 +432,7 @@ module dao3_contract::dao {
         {
             let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
             let dao_coin_storage = &mut dao_coin_storage_val;
-            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
+            let coin_item = daocoin::mint_for_testing(dao_coin_storage, 1000000000, test_scenario::ctx(scenario));
             let dao = test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
             let proposal = test_scenario::take_shared<Proposal>(scenario);
