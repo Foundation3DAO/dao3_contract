@@ -46,6 +46,7 @@ module dao3_contract::dao {
     struct DAO has key, store {
         id: UID,
         name: String,
+        imageUrl: String,
         proposals: Table<ID, u8>,
         // after proposal created, how long use should wait before he can vote.
         voting_delay: u64,
@@ -64,7 +65,9 @@ module dao3_contract::dao {
     // Proposal data struct.
     struct Proposal has key {
         id: UID,
-        name: vector<u8>,
+        name: String,
+        description: String,
+        discussionLink: String,
         // creator of the proposal
         proposer: address,
         // when voting begins.
@@ -102,6 +105,7 @@ module dao3_contract::dao {
     public entry fun register (
         admin_cap: DaoCoinAdminCap,
         name: vector<u8>,
+        imageUrl: vector<u8>,
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
@@ -117,6 +121,7 @@ module dao3_contract::dao {
         let new_dao = DAO {
             id: object::new(ctx),
             name: string::utf8(name),
+            imageUrl: string::utf8(imageUrl),
             proposals: table::new(ctx),
             voting_delay, 
             voting_period, 
@@ -130,6 +135,8 @@ module dao3_contract::dao {
 
     public entry fun create_proposal<DAOCOIN>(
         name: vector<u8>,
+        description: vector<u8>,
+        discussionLink: vector<u8>,
         propose_right: Coin<DAOCOIN>,
         dao: &mut DAO,
         dao_coin_storage: &DaoCoinStorage,
@@ -155,7 +162,9 @@ module dao3_contract::dao {
             eta = clock::timestamp_ms(clock) + dao.voting_delay + dao.voting_period + dao.min_action_delay;
         };
         let proposal = Proposal {
-            name,
+            name: string::utf8(name),
+            description: string::utf8(description),
+            discussionLink: string::utf8(discussionLink),
             id: object::new(ctx),
             proposer: tx_context::sender(ctx),
             start_time: clock::timestamp_ms(clock) + dao.voting_delay,
@@ -281,7 +290,7 @@ module dao3_contract::dao {
         test_scenario::next_tx(scenario, admin);
         {
             let adminCap = test_scenario::take_from_sender<DaoCoinAdminCap>(scenario);
-            register(adminCap, b"hello_world_dao", 1, 1, 10, 2, test_scenario::ctx(scenario));
+            register(adminCap, b"hello_world_dao", b"", 1, 1, 10, 2, test_scenario::ctx(scenario));
         };
 
         // acceptance happy path
@@ -293,7 +302,7 @@ module dao3_contract::dao {
             let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
             let dao= test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
-            create_proposal<daocoin::DAOCOIN>(b"proposal name", coin_item, &mut dao, &dao_coin_storage_val, &c, b"test proposal", 100, b"", test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(b"proposal name", b"", b"", coin_item, &mut dao, &dao_coin_storage_val, &c, b"test proposal", 100, b"", test_scenario::ctx(scenario));
             
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(dao);
@@ -338,7 +347,7 @@ module dao3_contract::dao {
             let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
             let dao = test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
-            create_proposal<daocoin::DAOCOIN>(b"proposal name",coin_item, &mut dao, &dao_coin_storage_val, &c, b"", 100, b"", test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(b"proposal name", b"", b"", coin_item, &mut dao, &dao_coin_storage_val, &c, b"", 100, b"", test_scenario::ctx(scenario));
             
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(dao);
@@ -378,7 +387,7 @@ module dao3_contract::dao {
             let coin_item = daocoin::mint_for_testing(dao_coin_storage, 1000000000, test_scenario::ctx(scenario));
             let dao = test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
-            create_proposal<daocoin::DAOCOIN>(b"proposal name",coin_item, &mut dao, &dao_coin_storage_val, &c, b"test proposal", 100, b"", test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(b"proposal name", b"", b"", coin_item, &mut dao, &dao_coin_storage_val, &c, b"test proposal", 100, b"", test_scenario::ctx(scenario));
             
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(dao);
@@ -420,7 +429,7 @@ module dao3_contract::dao {
             let coin_item = daocoin::mint_for_testing(dao_coin_storage, 1000000000, test_scenario::ctx(scenario));
             let dao = test_scenario::take_shared<DAO>(scenario);
             let c = clock::create_for_testing(test_scenario::ctx(scenario));
-            create_proposal<daocoin::DAOCOIN>(b"proposal name",coin_item, &mut dao, &dao_coin_storage_val, &c, WITHDRAW_ACTION, 100, address::to_bytes(non_coin_holder), test_scenario::ctx(scenario));
+            create_proposal<daocoin::DAOCOIN>(b"proposal name", b"", b"", coin_item, &mut dao, &dao_coin_storage_val, &c, WITHDRAW_ACTION, 100, address::to_bytes(non_coin_holder), test_scenario::ctx(scenario));
             
             test_scenario::return_shared(dao_coin_storage_val);
             test_scenario::return_shared(dao);
