@@ -9,8 +9,9 @@ module dao3_contract::dao {
     use sui::tx_context::{Self, TxContext};
     use sui::table::{Self, Table};
     use sui::clock::{Self, Clock};
+    use sui::balance::{Self, Balance};
 
-    use dao3_contract::daocoin::{Self, DaoCoinAdminCap, DaoCoinStorage, mint_with_proposal};
+    use dao3_contract::daocoin::{Self, DAOCOIN, DaoCoinAdminCap, DaoCoinStorage, mint_with_proposal};
 
     const BLACK_HOLE: address = @0x0;
 
@@ -93,6 +94,7 @@ module dao3_contract::dao {
         amount: u64,
         // receive the money the accepted proposal grants  
         receiver: address,
+        staked_balance: Balance<DAOCOIN>,
     }
 
     struct ProposalEvent has copy, drop {
@@ -175,6 +177,7 @@ module dao3_contract::dao {
             voters: table::new(ctx),
             amount,
             receiver,
+            staked_balance: balance::zero()
         };
         let id = object::uid_to_inner(&proposal.id);
         event::emit( ProposalEvent {
