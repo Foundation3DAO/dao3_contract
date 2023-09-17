@@ -47,7 +47,7 @@ module dao3_contract::daocoin {
           id: object::new(ctx),
           supply,
       };
-      let init_coin = mint_with_proposal(&mut storage, 10000000000, ctx);
+      let init_coin = mint_with_proposal(&mut storage, 1000000000, ctx);
       // Share the DaoCoinStorage Object with the Sui network
       transfer::share_object(storage);
 

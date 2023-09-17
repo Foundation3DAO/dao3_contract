@@ -59,13 +59,6 @@ module dao3_contract::dao {
         min_action_delay: u64,
     }
 
-    // user can get daos info from this table
-    // Table<DAOID, vector<VotingMachineID, ConfigID>>
-    struct SharedDaoregistrar has key {
-        id: UID,
-        daos: Table<ID, u8>,
-    }
-
     struct MintAction has store {}
 
     // Proposal data struct.
@@ -131,14 +124,6 @@ module dao3_contract::dao {
             min_action_delay
         };
 
-        let dao_registrar = SharedDaoregistrar {
-            id: object::new(ctx),
-            daos: table::new(ctx)
-        };
-
-        table::add(&mut dao_registrar.daos, object::uid_to_inner(&new_dao.id), 0);
-        
-        transfer::share_object(dao_registrar);
         transfer::share_object(new_dao);
         transfer::public_transfer(admin_cap, BLACK_HOLE)
     }
@@ -303,10 +288,6 @@ module dao3_contract::dao {
         // test coin holder can create a proposal
         test_scenario::next_tx(scenario, admin);
         {
-            let dao_registrar = test_scenario::take_shared<SharedDaoregistrar>(scenario);
-            assert!(table::length(&dao_registrar.daos) == 1, ERR_DAO_TABLE_MISMATCH);
-            test_scenario::return_shared(dao_registrar);
-            
             let dao_coin_storage_val = test_scenario::take_shared<DaoCoinStorage>(scenario);
             let dao_coin_storage = &mut dao_coin_storage_val;
             let coin_item = daocoin::mint_for_testing(dao_coin_storage, 100, test_scenario::ctx(scenario));
