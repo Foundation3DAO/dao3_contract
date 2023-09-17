@@ -209,7 +209,7 @@ module dao3_contract::dao {
         };
         
         if (!table::contains(&proposal.voters, tx_context::sender(ctx))) {
-            table::add(&mut proposal.voters, tx_context::sender(ctx), 0);
+            table::add(&mut proposal.voters, tx_context::sender(ctx), coin::value<DAOCOIN>(&voting_right));
         };
 
         transfer::public_transfer(voting_right, tx_context::sender(ctx));
