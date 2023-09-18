@@ -193,7 +193,7 @@ module dao3_contract::dao {
         proposal.propsal_state
     }
 
-    public entry fun vote_for_proposal<DAOCOIN>(
+    public entry fun vote_for_proposal(
         voting_right: Coin<DAOCOIN>,
         proposal: &mut Proposal,
         for: bool,
@@ -203,19 +203,20 @@ module dao3_contract::dao {
         assert!(proposal.end_time >= clock::timestamp_ms(clock), ERR_PROPOSAL_STATE_INVALID);
         assert!(proposal.start_time <= clock::timestamp_ms(clock), ERR_PROPOSAL_STATE_INVALID);
         assert!(proposal.propsal_state == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
-        assert!(coin::value<DAOCOIN>(&voting_right) > 0, ERR_ZERO_COIN);
+        assert!(coin::value(&voting_right) > 0, ERR_ZERO_COIN);
 
         if (for) {
-            proposal.for_votes = proposal.for_votes + coin::value<DAOCOIN>(&voting_right);
+            proposal.for_votes = proposal.for_votes + coin::value(&voting_right);
         } else {
-            proposal.against_votes = proposal.against_votes + coin::value<DAOCOIN>(&voting_right);
+            proposal.against_votes = proposal.against_votes + coin::value(&voting_right);
         };
         
         if (!table::contains(&proposal.voters, tx_context::sender(ctx))) {
-            table::add(&mut proposal.voters, tx_context::sender(ctx), coin::value<DAOCOIN>(&voting_right));
+            table::add(&mut proposal.voters, tx_context::sender(ctx), coin::value(&voting_right));
         };
 
-        transfer::public_transfer(voting_right, tx_context::sender(ctx));
+        let coin_balance = coin::into_balance(voting_right);
+        balance::join(&mut proposal.staked_balance, coin_balance);
     }
 
     public entry fun trigger_proposal_state_change (
@@ -322,7 +323,7 @@ module dao3_contract::dao {
             clock::increment_for_testing(&mut c, 2);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
-            vote_for_proposal<daocoin::DAOCOIN>(coin_item,&mut proposal,true, &c, test_scenario::ctx(scenario));
+            vote_for_proposal(coin_item,&mut proposal,true, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == QUEUED, ERR_PROPOSAL_STATE_INVALID);
@@ -367,7 +368,7 @@ module dao3_contract::dao {
             clock::increment_for_testing(&mut c, 2);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
-            vote_for_proposal<daocoin::DAOCOIN>(coin_item, &mut proposal,true, &c, test_scenario::ctx(scenario));
+            vote_for_proposal(coin_item, &mut proposal,true, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACCEPTED, ERR_PROPOSAL_STATE_INVALID);
@@ -407,7 +408,7 @@ module dao3_contract::dao {
             clock::increment_for_testing(&mut c, 2);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
-            vote_for_proposal<daocoin::DAOCOIN>(coin_item, &mut proposal,false, &c, test_scenario::ctx(scenario));
+            vote_for_proposal(coin_item, &mut proposal,false, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == REJECTED, ERR_PROPOSAL_STATE_INVALID);
@@ -449,7 +450,7 @@ module dao3_contract::dao {
             clock::increment_for_testing(&mut c, 2);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
-            vote_for_proposal<daocoin::DAOCOIN>(coin_item, &mut proposal,true, &c, test_scenario::ctx(scenario));
+            vote_for_proposal(coin_item, &mut proposal,true, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == QUEUED, ERR_PROPOSAL_STATE_INVALID);
