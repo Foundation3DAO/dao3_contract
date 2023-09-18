@@ -89,12 +89,17 @@ module dao3_contract::dao {
         // consistent with state in the voting machine's proposals table
         propsal_state: u8,
         // check if an address voted or not
-        voters: Table<address, u64>,
+        voters: Table<address, VoterInfo>,
         // how much the proposal grants
         amount: u64,
         // receive the money the accepted proposal grants  
         receiver: address,
         staked_balance: Balance<DAOCOIN>,
+    }
+
+    struct VoterInfo has store, drop {
+        accept: bool,
+        votes: u64
     }
 
     struct ProposalEvent has copy, drop {
@@ -204,15 +209,35 @@ module dao3_contract::dao {
         assert!(proposal.start_time <= clock::timestamp_ms(clock), ERR_PROPOSAL_STATE_INVALID);
         assert!(proposal.propsal_state == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
         assert!(coin::value(&voting_right) > 0, ERR_ZERO_COIN);
-
-        if (for) {
-            proposal.for_votes = proposal.for_votes + coin::value(&voting_right);
-        } else {
-            proposal.against_votes = proposal.against_votes + coin::value(&voting_right);
-        };
         
         if (!table::contains(&proposal.voters, tx_context::sender(ctx))) {
-            table::add(&mut proposal.voters, tx_context::sender(ctx), coin::value(&voting_right));
+            table::add(&mut proposal.voters, tx_context::sender(ctx), VoterInfo {
+                accept: for,
+                votes: coin::value(&voting_right)
+            });
+            if (for) {
+                proposal.for_votes = proposal.for_votes + coin::value(&voting_right);
+            } else {
+                proposal.against_votes = proposal.against_votes + coin::value(&voting_right);
+            };
+        } else {
+            let voter_info = table::borrow_mut(&mut proposal.voters, tx_context::sender(ctx));
+            if (for) {
+                if (voter_info.accept) {
+                    proposal.for_votes = proposal.for_votes + coin::value(&voting_right);
+                } else {
+                    proposal.for_votes = proposal.for_votes - voter_info.votes;
+                    proposal.against_votes = proposal.against_votes + voter_info.votes + coin::value(&voting_right);
+                }
+            } else {
+                if (voter_info.accept) {
+                    proposal.against_votes = proposal.against_votes - voter_info.votes;
+                    proposal.for_votes = proposal.for_votes + voter_info.votes + coin::value(&voting_right);
+                } else {
+                    proposal.against_votes = proposal.against_votes + coin::value(&voting_right);                    
+                }
+            };
+            voter_info.votes = voter_info.votes + coin::value(&voting_right);
         };
 
         let coin_balance = coin::into_balance(voting_right);
@@ -285,7 +310,7 @@ module dao3_contract::dao {
         };
 
         let user_staked_value = table::borrow(&proposal.voters, tx_context::sender(ctx));
-        let user_staked_coin = coin::take(&mut proposal.staked_balance, *user_staked_value, ctx);
+        let user_staked_coin = coin::take(&mut proposal.staked_balance, user_staked_value.votes, ctx);
         table::remove(&mut proposal.voters, tx_context::sender(ctx)); 
         transfer::public_transfer(user_staked_coin, tx_context::sender(ctx));
     }
