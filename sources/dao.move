@@ -226,13 +226,13 @@ module dao3_contract::dao {
                 if (voter_info.accept) {
                     proposal.for_votes = proposal.for_votes + coin::value(&voting_right);
                 } else {
-                    proposal.for_votes = proposal.for_votes - voter_info.votes;
-                    proposal.against_votes = proposal.against_votes + voter_info.votes + coin::value(&voting_right);
+                    proposal.for_votes = proposal.for_votes + voter_info.votes + coin::value(&voting_right);
+                    proposal.against_votes = proposal.against_votes - voter_info.votes;
                 }
             } else {
                 if (voter_info.accept) {
-                    proposal.against_votes = proposal.against_votes - voter_info.votes;
-                    proposal.for_votes = proposal.for_votes + voter_info.votes + coin::value(&voting_right);
+                    proposal.against_votes = proposal.against_votes + voter_info.votes + coin::value(&voting_right);
+                    proposal.for_votes = proposal.for_votes - voter_info.votes;
                 } else {
                     proposal.against_votes = proposal.against_votes + coin::value(&voting_right);                    
                 }
@@ -366,7 +366,9 @@ module dao3_contract::dao {
             clock::increment_for_testing(&mut c, 2);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
-            vote_for_proposal(coin_item,&mut proposal,true, &c, test_scenario::ctx(scenario));
+            let first_coin = coin::split(&mut coin_item, 100, test_scenario::ctx(scenario));
+            vote_for_proposal(first_coin, &mut proposal,false, &c, test_scenario::ctx(scenario));
+            vote_for_proposal(coin_item, &mut proposal,true, &c, test_scenario::ctx(scenario));
             clock::increment_for_testing(&mut c, 1);
             trigger_proposal_state_change(&mut dao, &mut proposal, &c);
             assert!(proposal_state(&proposal) == QUEUED, ERR_PROPOSAL_STATE_INVALID);
