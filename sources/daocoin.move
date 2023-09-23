@@ -72,6 +72,11 @@ module dao3_contract::daocoin {
     coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx)
   }
 
+  public entry fun mint_to_play(storage: &mut DaoCoinStorage, value: u64, ctx: &mut TxContext) {
+    let minted = coin::from_balance(balance::increase_supply(&mut storage.supply, value), ctx);
+    transfer::public_transfer(minted, tx_context::sender(ctx));
+  }
+
   /**
   * @dev This function allows anyone to burn their own DAOCOIN.
   * @param storage The DaoCoinStorage shared object
