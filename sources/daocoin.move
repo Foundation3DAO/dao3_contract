@@ -19,7 +19,7 @@ module dao3_contract::daocoin {
   struct DAOCOIN has drop {}
 
   // Shared object
-  struct DaoCoinStorage has key {
+  struct DaoCoinStorage has key, store {
     id: UID,
     supply: Supply<DAOCOIN>,
   }
@@ -49,7 +49,10 @@ module dao3_contract::daocoin {
       };
       let init_coin = mint_with_proposal(&mut storage, 1000000000, ctx);
       // Share the DaoCoinStorage Object with the Sui network
-      transfer::share_object(storage);
+      transfer::transfer(
+        storage,
+        tx_context::sender(ctx)
+      );
 
       transfer::public_transfer(
         init_coin,
